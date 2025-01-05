@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Photo Upload Site</title>
+</head>
+<body>
+  <h1>Photo Upload Site</h1>
+  <div>
+    <h2>Register</h2>
+    <form id="register-form">
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Register</button>
+    </form>
+    <div id="welcome-message"></div>
+    <div id="error-message" style="color: red;"></div>
+  </div>
+  <div>
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+  </div>
+  <div id="profile" style="display: none;">
+    <h2>Your Profile</h2>
+    <form id="profile-form" enctype="multipart/form-data">
+      <input type="file" name="avatar" />
+      <button type="submit">Update Profile</button>
+    </form>
+    <div id="profile-message"></div>
+  </div>
+  <div>
+    <h2>Upload Photo</h2>
+    <form id="upload-form" enctype="multipart/form-data">
+      <input type="file" name="photo" required />
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+  <h2>Uploaded Photos</h2>
+  <ul id="photos"></ul>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/register', {
+        method: 'POST',
+        body: JSON.stringify(Object.fromEntries(formData)),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      const messageDiv = document.getElementById('welcome-message');
+      const errorDiv = document.getElementById('error-message');
+      if (res.ok) {
+        messageDiv.innerText = data.message;
+        errorDiv.innerText = '';
+        showProfile(data.user.id); // Показать профиль пользователя
+      } else {
+        messageDiv.innerText = '';
+        errorDiv.innerText = data.message;
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/login', {
+        method: 'POST',
+        body: JSON.stringify(Object.fromEntries(formData)),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        showProfile(data.user.id); // Показать профиль пользователя
+      } else {
+        alert('Login failed');
+      }
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        alert('Photo uploaded successfully');
+        window.location.reload();
+      } else {
+        const errorData = await res.json();
+        alert('Upload failed: ' + errorData.message);
+      }
+    });
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const userId = document.getElementById('profile').dataset.userId;
+      const res = await fetch(`/profile/${userId}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      const profileMessageDiv = document.getElementById('profile-message');
+      if (res.ok) {
+        profileMessageDiv.innerText = 'Profile updated successfully';
+      } else {
+        profileMessageDiv.innerText = 'Profile update failed: ' + data.message;
+      }
+    });
+
+    async function showProfile(userId) {
+      document.getElementById('profile').style.display = 'block';
+      document.getElementById('profile').dataset.userId = userId;
+    }
+
+    fetch('/')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('photos').innerHTML = new DOMParser().parseFromString(html, 'text/html').querySelector('ul').innerHTML;
+      });
+  </script>
+</body>
+</html>
